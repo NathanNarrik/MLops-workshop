@@ -1,0 +1,545 @@
+[
+  {
+    "type": "cover",
+    "title": "You trained a model.\nNow what?",
+    "subtitle": "SoDA MLOps Workshop",
+    "detail": "From Model to Deployment",
+    "notes": "0:00–0:01. Welcome students to SoDA. This is a 60-minute workshop. Ask who has trained a model in a notebook and who has let somebody else use one. Today we will follow one small model all the way into a working application. Room: PSH 150. Event date and primary owner remain TBD. Start time is 7:30 PM Arizona time. Begin with 15 minutes of concepts. Keep the live application closed until slide 14."
+  },
+  {
+    "type": "rows",
+    "title": "Machine learning in one minute",
+    "items": [
+      [
+        "Input",
+        "An image of a handwritten digit"
+      ],
+      [
+        "Label",
+        "The correct answer, such as 3"
+      ],
+      [
+        "Model",
+        "A pattern learned from examples"
+      ],
+      [
+        "Prediction",
+        "The model’s guess for a new image"
+      ]
+    ],
+    "detail": "Our example: a digit recognizer that learns from labeled images",
+    "notes": "0:01–0:02. Assume no ML experience. Start with a handwritten 3 on the board. The image is input, the number 3 is its label, and the model learns a rule from many examples. Later it predicts a digit for a new image. Input measurements are also called features. In this workshop they are pixel brightness values. A model can make mistakes. We use a supervised learning example, but not all ML uses labeled examples. No live app or code yet."
+  },
+  {
+    "type": "two",
+    "title": "Training and inference",
+    "leftTitle": "Training = learning",
+    "left": [
+      "Use examples with answers",
+      "Fit a model to those examples",
+      "Save the fitted model"
+    ],
+    "rightTitle": "Inference = predicting",
+    "right": [
+      "Receive a new input",
+      "Use the saved model",
+      "Return a prediction"
+    ],
+    "notes": "0:02–0:03. Explain inference as the technical name for using a model to make a prediction. Training is like practice with answer keys, while inference is answering a new question. The deployed model in this demo does not learn automatically from every request. Retraining is a separate process. The analogy is a teaching aid, not a claim that a model reasons like a person."
+  },
+  {
+    "type": "concept",
+    "title": "What is MLOps?",
+    "label": "MLOps = Machine Learning Operations",
+    "statement": "The practices that help a team build, release, and maintain a reliable machine learning application.",
+    "detail": "Data work, model development, and software operations work together",
+    "notes": "0:03–0:05. Say the full name aloud. Operations means keeping an application usable after people start relying on it. Production means a real environment where people or other systems use the application. MLOps connects the people developing models with the people releasing and operating software, with shared checks and responsibilities. It covers the lifecycle, not one product or tool. The goal here is to understand the practices before naming cloud tools. Source: https://docs.cloud.google.com/architecture/mlops-continuous-delivery-and-automation-pipelines-in-machine-learning"
+  },
+  {
+    "type": "two",
+    "title": "The notebook is only the beginning",
+    "leftTitle": "In your notebook",
+    "left": [
+      "You choose the input",
+      "You run the cells",
+      "You inspect the answer"
+    ],
+    "rightTitle": "In an application",
+    "right": [
+      "Someone else sends input",
+      "A service answers requests",
+      "You need evidence it still works"
+    ],
+    "notes": "0:05–0:06. Ask: what breaks if I send a notebook file to a friend and ask them to use the model? Elicit missing dependencies, environment state, input assumptions, and no running service. MLOps is the practice around making this model usable and maintaining it over time. Avoid implying one workshop demonstrates an entire production platform."
+  },
+  {
+    "type": "rows",
+    "title": "Code, data, and model versions",
+    "items": [
+      [
+        "Code",
+        "Which training and app code did we use?"
+      ],
+      [
+        "Data",
+        "Which examples did the model learn from?"
+      ],
+      [
+        "Model artifact",
+        "Which saved model is serving predictions?"
+      ],
+      [
+        "Environment",
+        "Which library versions does it need?"
+      ]
+    ],
+    "detail": "Versioning helps explain results and restore a working release",
+    "notes": "0:06–0:07. Define artifact as a saved output of a process. Here the model artifact is a file containing the fitted pipeline. Versioning means giving each revision an identity so a team can find it again. A model can change when the training data changes, even if the source code does not. A model registry is a catalog of saved models and their metadata; this workshop uses files and metadata.json instead. Example: identify the model that made yesterday’s wrong prediction. Source: https://learn.microsoft.com/en-us/azure/architecture/ai-ml/guide/machine-learning-operations-v2"
+  },
+  {
+    "type": "concept",
+    "title": "Reproducible pipelines",
+    "label": "A pipeline is an ordered set of steps",
+    "statement": "Prepare the data, train a model, evaluate it, and save the result using a repeatable process.",
+    "detail": "Record the inputs, settings, and environment so you can repeat the work",
+    "notes": "0:07–0:08. Explain reproducibility as being able to repeat a process and account for its results. Clicking notebook cells in an unknown order can hide state. A script makes the order explicit. Later, sklearn Pipeline will refer specifically to preprocessing plus prediction. A full ML workflow also includes data preparation, evaluation, and release steps. A fixed seed helps repeat a split; it does not guarantee identical behavior on every computer. Source: https://docs.cloud.google.com/architecture/mlops-continuous-delivery-and-automation-pipelines-in-machine-learning"
+  },
+  {
+    "type": "two",
+    "title": "Serving and deployment",
+    "leftTitle": "Serving = answering",
+    "left": [
+      "An app sends input to an API",
+      "The API calls the saved model",
+      "The app receives a prediction"
+    ],
+    "rightTitle": "Deployment = releasing",
+    "right": [
+      "Package the code and model",
+      "Run them on a server",
+      "Check that others can use them"
+    ],
+    "notes": "0:08–0:09. Define API as an interface that lets one program ask another program to do something. A request is the message sent in, and a response is the message returned. A server is a computer or process that answers requests. Our API takes a digit image represented as numbers and returns a predicted digit. Deployment means making a release available in its target environment. You can serve a model on your own computer before deploying it to a host. Docker later provides a container, a package for the app and its runtime dependencies. These are plain-language definitions for this demo.",
+    "detail": "API: a way for programs to send requests and receive answers"
+  },
+  {
+    "type": "two",
+    "title": "Service health and model quality",
+    "leftTitle": "Is the app working?",
+    "left": [
+      "Can it answer a request?",
+      "How long does an answer take?",
+      "Are requests failing?"
+    ],
+    "rightTitle": "Are predictions useful?",
+    "right": [
+      "Does the digit match the truth?",
+      "Does it work on new examples?",
+      "Which mistakes matter most?"
+    ],
+    "notes": "0:09–0:10. A service may answer quickly and still predict the wrong digit. Define latency as how long a request takes, and accuracy as the fraction of labeled examples predicted correctly. Explain that you can often observe service failures immediately, while checking correctness requires the real answer. A green health endpoint does not certify model quality. This distinction motivates both the tests and the monitoring demo. Source: https://learn.microsoft.com/en-us/azure/machine-learning/concept-model-monitoring"
+  },
+  {
+    "type": "concept",
+    "title": "Data drift and feedback",
+    "label": "Data drift = the kinds of inputs a model sees change",
+    "statement": "A model trained on neat digit images may later receive blurry photos or different handwriting.",
+    "detail": "Use real answers to check quality before replacing the model",
+    "notes": "0:10–0:12. Distribution means the patterns and frequencies in the examples a model receives. Drift can happen while the code stays unchanged. Ask students to suggest a new source of digit images. A drift signal is a reason to investigate, not proof that accuracy fell. Feedback means obtaining actual outcomes or labels so you can check predictions. If changes justify a new model, prepare data, train a candidate, evaluate it, and decide whether to release it. Retraining does not automatically fix a data or software bug. In the live exercise, brightness changes will illustrate one narrow input signal. Source: https://learn.microsoft.com/en-us/azure/machine-learning/concept-model-monitoring"
+  },
+  {
+    "type": "rows",
+    "title": "Automation: CI, CD, and retraining",
+    "items": [
+      [
+        "CI",
+        "Continuous integration: test code changes"
+      ],
+      [
+        "CD",
+        "Continuous delivery: prepare a release"
+      ],
+      [
+        "Retraining",
+        "Fit a candidate model using updated data"
+      ],
+      [
+        "Rollback",
+        "Restore a previously working release"
+      ]
+    ],
+    "detail": "Checks support release decisions. New models still need evaluation.",
+    "notes": "0:12–0:13. Expand CI as continuous integration. It combines code changes with automated checks. Here CD means continuous delivery: preparing a releasable version, with deployment still allowed to be manual. Continuous deployment is the related practice of automatically releasing passing changes. Retraining is a separate workflow; it does not mean automatically deploying the new model. Define rollback as returning to a known-good release if a change causes problems. We demonstrate manual deployment and include a GitHub Actions test/build workflow. Students do not need to memorize the acronyms. Source: https://docs.cloud.google.com/architecture/mlops-continuous-delivery-and-automation-pipelines-in-machine-learning"
+  },
+  {
+    "type": "concept",
+    "title": "Quick check before the demo",
+    "label": "The app returns a wrong digit in 50 milliseconds",
+    "statement": "What would you investigate: the service, the model, the input data, or more than one?",
+    "detail": "Discuss with a neighbor for 30 seconds",
+    "notes": "0:13–0:14. Pause before showing tools. The correct response is to investigate with evidence: a fast response alone does not establish service correctness or model correctness. Inspect the input, preprocessing, loaded model version, and true label. The error could be an unfamiliar input, a model limitation, or an application bug. Ask someone to explain the difference between training and inference in their own words. Then introduce the lifecycle as a map for the practical work."
+  },
+  {
+    "type": "flow",
+    "title": "Our path tonight",
+    "steps": [
+      [
+        "Train",
+        "Fit and evaluate"
+      ],
+      [
+        "Package",
+        "Save the pipeline"
+      ],
+      [
+        "Deploy",
+        "Serve a public app"
+      ],
+      [
+        "Monitor",
+        "Watch real requests"
+      ]
+    ],
+    "detail": "One model. One API. A working application.",
+    "notes": "0:14–0:15. Connect the concepts to the next 45 minutes: 3 minutes of demo/setup, 9 training, 9 packaging, 10 deployment, 9 monitoring, and 5 recap/questions. Students use their own Codespaces. You demonstrate one shared hosted deployment. The process labels come from the workshop brief."
+  },
+  {
+    "type": "image",
+    "title": "Meet the SoDA Digit Lab",
+    "image": "app-lab.png",
+    "caption": "Choose a sample, predict a digit, then try your own handwriting",
+    "notes": "0:15–0:16. Switch to the live browser. Select digit 3 and click Predict. Then draw a digit. If it fails, keep that example: it illustrates a mismatch between the training distribution and a person's handwriting. Scores are not calibrated probabilities of correctness. This screenshot comes from the running repository application. Show the 8×8 preview: it is the exact payload image. Cropping, centering, and averaging the canvas avoids the small-drawing failure where every digit was predicted as 4."
+  },
+  {
+    "type": "code",
+    "title": "Your Codespace",
+    "code": "Code → Codespaces → Create codespace\n\n# After setup finishes\nbash scripts/start.sh\n\n# Open port 8000 in the Ports tab",
+    "detail": "Python 3.12, dependencies, and the model are prepared automatically",
+    "notes": "0:16–0:18. Share the actual workshop repository URL verbally or through the event channel. Do not reuse the old deck's vibe-to-prod URL. Students need a GitHub account and available Codespaces quota. The first container setup can take several minutes. Have officers help and let students pair. After a Codespace restart, the server must be started again. Source: https://docs.github.com/en/codespaces/about-codespaces/deep-dive Ask students to open their Codespace during arrival so its setup can finish during the concept introduction. This slide starts the actual app."
+  },
+  {
+    "type": "section",
+    "number": "01",
+    "title": "Train",
+    "subtitle": "A repeatable model and an honest evaluation",
+    "notes": "0:18–0:18:30. Open notebooks/01_train.ipynb. Select the Python 3.12 kernel. Explain that the script and notebook use the same split and model pipeline."
+  },
+  {
+    "type": "numbers",
+    "title": "A model small enough to understand",
+    "numbers": [
+      [
+        "1,797",
+        "digit images"
+      ],
+      [
+        "8 × 8",
+        "pixels per image"
+      ],
+      [
+        "0–9",
+        "target classes"
+      ]
+    ],
+    "detail": "64 input values, each from 0 to 16. The dataset ships with scikit-learn.",
+    "notes": "0:18:30–0:20. Run the data inspection cell and print the first image's pixel matrix. This is sklearn load_digits, not the 28×28 MNIST dataset. Source: https://scikit-learn.org/stable/modules/generated/sklearn.datasets.load_digits.html. Original dataset: UCI Optical Recognition of Handwritten Digits, E. Alpaydin and C. Kaynak."
+  },
+  {
+    "type": "two",
+    "title": "Training data and test data",
+    "leftTitle": "1,437 training examples",
+    "left": [
+      "Learn how to scale the inputs",
+      "Fit the digit classifier",
+      "Keep the split repeatable"
+    ],
+    "rightTitle": "360 held-out examples",
+    "right": [
+      "Evaluate after fitting",
+      "Keep test examples out of training",
+      "Check performance on unseen data"
+    ],
+    "notes": "0:20–0:21:30. Run split_data(). The stratified split uses 20% for testing and seed 42. The fitted scaler must not see the test data during fit. If systematically tuning hyperparameters, add a validation split and keep a final untouched test set. Source: https://scikit-learn.org/stable/common_pitfalls.html. Counts verified by repository execution."
+  },
+  {
+    "type": "code",
+    "title": "Preprocessing travels with the model",
+    "code": "pipeline = make_pipeline(\n    MinMaxScaler(),\n    SVC(C=10, probability=True, random_state=42)\n)\npipeline.fit(x_train, y_train)\nscores = pipeline.predict_proba(x_test)\npredictions = scores.argmax(axis=1)",
+    "detail": "The API loads this fitted pipeline and uses the same transformation",
+    "notes": "0:21:30–0:23. Run the model cell. Scaling is learned from training examples and applied unchanged at prediction time. Packaging only the classifier would create a training/serving mismatch. The actual script also sets random_state=42. This is a shortened excerpt, not the full training command. Source: https://scikit-learn.org/stable/common_pitfalls.html The SVC is a nonlinear classifier. MinMaxScaler learns feature ranges on training data. Both evaluation and the API choose the highest-probability class. Classes are ordered 0–9 here. Do not substitute SVC.predict(), which can disagree with its probability estimates."
+  },
+  {
+    "type": "metric",
+    "title": "The baseline result",
+    "value": "99.17%",
+    "label": "accuracy on 360 held-out examples",
+    "detail": "Measured on this dataset and split. Your handwriting can behave differently.",
+    "notes": "0:23–0:24. The revised model correctly classified 357 of 360 examples in the existing test split using the same probability-argmax rule as the API. Show the confusion matrix. The script blocks packaging below 93%. This score is specific to this dataset and split, not general handwriting accuracy. The model was revised after testing drawing failures, so this split is now a regression benchmark rather than a fresh independent estimate. Source: ml/train.py with SVC C=10.0 and seed 42."
+  },
+  {
+    "type": "exercise",
+    "title": "Exercise 1: your model artifact",
+    "code": "python -m ml.train",
+    "items": [
+      "Find test_accuracy in metadata.json",
+      "Find the model version and input contract",
+      "Explain why training accuracy is not enough"
+    ],
+    "detail": "Checkpoint: model.joblib + metadata.json + samples.json",
+    "notes": "0:24–0:27. Give students two minutes, then ask for a one-sentence answer. Inspect artifacts/metadata.json. The artifact hash identifies serialized bytes. Metadata records data identity, split seed, code hash, hyperparameters, and dependency versions. Samples are public held-out examples. Only load trusted joblib files. Source: https://scikit-learn.org/stable/model_persistence.html"
+  },
+  {
+    "type": "section",
+    "number": "02",
+    "title": "Package",
+    "subtitle": "A model somebody else can call",
+    "notes": "0:27–0:27:30. Move from notebooks to app/main.py. A fitted artifact is one part of the serving application. The request schema tells another program how to use it. A request schema is simply a set of rules for the input format."
+  },
+  {
+    "type": "two",
+    "title": "The prediction contract",
+    "leftTitle": "POST /predict",
+    "left": [
+      "64 finite numbers",
+      "Each value between 0 and 16",
+      "Pixels ordered row by row"
+    ],
+    "rightTitle": "The response",
+    "right": [
+      "Predicted digit",
+      "Ten class scores",
+      "Loaded model version"
+    ],
+    "notes": "0:27:30–0:29. Open /docs and show PredictionInput. Explain JSON and HTTP briefly for students who have only used notebooks. Strict validation rejects strings, booleans, invalid lengths, extra fields, and out-of-range inputs. A class score is not a promise of correctness. Source: https://fastapi.tiangolo.com/tutorial/body/"
+  },
+  {
+    "type": "flow",
+    "title": "What happens when you click Predict?",
+    "steps": [
+      [
+        "Browser",
+        "64 pixel values"
+      ],
+      [
+        "FastAPI",
+        "Validate input"
+      ],
+      [
+        "Pipeline",
+        "Scale and predict"
+      ],
+      [
+        "Response",
+        "Digit and version"
+      ]
+    ],
+    "detail": "The server loads the model once at startup",
+    "notes": "0:29–0:30. Trace the exact flow in app/static/app.js and app/main.py. The frontend reduces the drawing to 8×8 pixels, converts brightness to 0–16, and sends JSON to /predict. The server validates before model inference. A sample uses its exact held-out pixels. The server loads the joblib artifact once in its lifespan handler. After retraining, restart the server to load the new artifact."
+  },
+  {
+    "type": "exercise",
+    "title": "Exercise 2: an invalid request",
+    "code": "python scripts/traffic.py --mode invalid --count 1",
+    "items": [
+      "Read the HTTP response",
+      "Check the dashboard error rate",
+      "Explain whether the model ran"
+    ],
+    "detail": "Expected: HTTP 422. Rejected inputs never reach prediction.",
+    "notes": "0:30–0:33. Run the command in a second terminal while the server stays running. Ask students to inspect /stats. Requests and errors increase. Successful predictions and the brightness window do not. Explain that client input errors and server failures both matter but are different categories. The Prometheus counter labels HTTP status. Answers are in docs/SOLUTIONS.md."
+  },
+  {
+    "type": "rows",
+    "title": "Tests protect the handoff",
+    "items": [
+      [
+        "Quality",
+        "The model passes its accuracy check"
+      ],
+      [
+        "Consistency",
+        "The API agrees with the notebook result"
+      ],
+      [
+        "Input rules",
+        "Bad inputs fail before prediction"
+      ],
+      [
+        "Startup",
+        "The app needs a valid model to start"
+      ]
+    ],
+    "detail": "python -m pytest -q",
+    "notes": "0:33–0:34:30. Run pytest. Point to test_full_holdout_api_matches_offline_evaluation: every test example runs through the API. Show one input validation case. The suite checks quality, serving parity, validation, monitoring, and startup failures. The service refuses to start on a missing artifact or checksum mismatch. The hash is an integrity check, not proof that an untrusted artifact is safe."
+  },
+  {
+    "type": "two",
+    "title": "Docker packages the runtime",
+    "leftTitle": "Build stage",
+    "left": [
+      "Install the required libraries",
+      "Train and check accuracy",
+      "Copy the saved model"
+    ],
+    "rightTitle": "Runtime stage",
+    "right": [
+      "Load the packaged pipeline",
+      "Serve on the assigned port",
+      "Report readiness at /health"
+    ],
+    "notes": "0:34:30–0:36. Open Dockerfile. It is a multi-stage build using Python 3.12. The runtime uses a non-root user and one worker. This small demo trains during image build for portability. In a larger ML system, training produces a separately versioned artifact that an image build or model registry promotes. Training never happens on each request. Optional container command: docker build -t soda-digit-lab:workshop . then docker run --rm -p 8001:8000 soda-digit-lab:workshop."
+  },
+  {
+    "type": "section",
+    "number": "03",
+    "title": "Deploy",
+    "subtitle": "A separate service with a public URL",
+    "notes": "0:36–0:36:30. Explain that the instructor will deploy one shared app while students keep their own development servers. Students do not need hosting accounts for this workshop."
+  },
+  {
+    "type": "two",
+    "title": "Two places the app can run",
+    "leftTitle": "GitHub Codespaces",
+    "left": [
+      "Your development workspace",
+      "A forwarded port exposes the app",
+      "Stops serving when the process stops"
+    ],
+    "rightTitle": "Render web service",
+    "right": [
+      "Builds the repository's Docker image",
+      "Runs separately from the Codespace",
+      "Provides a shared HTTPS address"
+    ],
+    "notes": "0:36:30–0:38. A forwarded port demonstrates remote access but is tied to the Codespace lifecycle. The separate hosted service continues independently, subject to its plan and host lifecycle. Render free services currently spin down after 15 minutes of inactivity and cold-start on a later request. Sources: https://docs.github.com/en/codespaces/developing-in-a-codespace/forwarding-ports-in-your-codespace and https://render.com/docs/free. Checked October 17, 2026."
+  },
+  {
+    "type": "rows",
+    "title": "The live deployment",
+    "items": [
+      [
+        "1",
+        "Connect the workshop repository to Render"
+      ],
+      [
+        "2",
+        "Build the Docker service from render.yaml"
+      ],
+      [
+        "3",
+        "Wait for /health to pass"
+      ],
+      [
+        "4",
+        "Open the public URL and make a prediction"
+      ]
+    ],
+    "detail": "One instructor account. The whole room can try the deployed app.",
+    "notes": "0:38–0:42. Switch to Render's prepared service. Trigger Manual Deploy, deploy latest commit, on a revision you already verified. If first creating it, New → Blueprint reads render.yaml. Show the model evaluation in build logs, the health path, and the assigned URL. Keep the known-good deployment ready. While the build runs, explain that code, dependencies, and model form the release. Free-tier behavior and account availability can change. Sources: https://render.com/docs/docker, https://render.com/docs/blueprint-spec, https://render.com/docs/health-checks"
+  },
+  {
+    "type": "code",
+    "title": "Deployment needs a working request",
+    "code": "python scripts/smoke.py \\\n  --url https://YOUR-SERVICE.onrender.com\n\nGET  /health     ready + model version\nPOST /predict    expected digit\nPOST /predict    422 for invalid input\nGET  /stats      requests recorded",
+    "detail": "If the build is delayed, use the prepared service or Codespaces fallback",
+    "notes": "0:42–0:46. Replace YOUR-SERVICE with the actual Render hostname. This is an intentional command placeholder, not an existing deployment. Ask a student to test on another device. The smoke script verifies a complete prediction, version identity, invalid-input rejection, and monitoring. A health endpoint alone does not prove the whole application works. Discuss rollback by selecting a known-good deployment or redeploying a known-good Git revision. Verify again after rollback. Source: https://render.com/docs/deploys"
+  },
+  {
+    "type": "section",
+    "number": "04",
+    "title": "Monitor",
+    "subtitle": "A running server can still make bad predictions",
+    "notes": "0:46–0:46:30. Return to each student's app, so experiments do not mix in the shared server. Ask: if /health returns ready, can the model still be wrong? Yes. Service health and prediction quality are separate questions."
+  },
+  {
+    "type": "rows",
+    "title": "Signals we can observe now",
+    "items": [
+      [
+        "Requests and errors",
+        "Did the service accept the input?"
+      ],
+      [
+        "Response time",
+        "How long did requests take?"
+      ],
+      [
+        "Low model scores",
+        "Which predictions deserve attention?"
+      ],
+      [
+        "Input brightness",
+        "Do recent inputs look different?"
+      ]
+    ],
+    "detail": "Production accuracy needs labeled outcomes",
+    "notes": "0:46:30–0:48. Show the dashboard and /metrics. Request/error totals are cumulative since process start. p95 uses the last 100 prediction-request latencies. The input window uses the last 100 valid predictions. Low score means maximum class score below 0.8. All metrics are in-memory and per process. Real deployment monitoring needs persistence and a system to aggregate and route alerts. Source: https://prometheus.io/docs/concepts/metric_types/ Define p95 before reading the dashboard: 95% of the recent measured request times are at or below this value. Define a metric as a recorded measurement."
+  },
+  {
+    "type": "image",
+    "title": "A deliberate input shift",
+    "image": "app-monitor.png",
+    "caption": "Normal samples, then brighter samples. Watch the brightness check.",
+    "notes": "0:48–0:51. Click Send 30 normal samples, then Send 30 brighter samples. The brighter mode adds eight to each pixel, capped at sixteen. Inputs remain valid but their distribution changes. The teaching heuristic compares the recent mean brightness with training-image mean brightness, normalized by training-image brightness standard deviation. It requires at least 20 predictions and a shift over two standard deviations. This is not a formal drift test and does not measure accuracy. Screenshot from the working application."
+  },
+  {
+    "type": "exercise",
+    "title": "Exercise 3: what does the alert prove?",
+    "code": "python scripts/traffic.py --mode normal --count 100",
+    "items": [
+      "Does HTTP 200 mean the digit is correct?",
+      "Does input shift prove accuracy dropped?",
+      "Which labels would answer that question?"
+    ],
+    "detail": "Replace the full window with normal samples and observe recovery",
+    "notes": "0:51–0:55. Give students two minutes to discuss. Answers: no, no, and trusted true-digit labels aligned with predictions. The input signal may miss drift that does not affect brightness. A high model score can still be wrong. Send 100 normal samples to replace the window, then show the alert clearing. Restarting would also clear metrics, but it discards evidence rather than demonstrating recovery."
+  },
+  {
+    "type": "two",
+    "title": "What a larger deployment adds",
+    "leftTitle": "Controlled model releases",
+    "left": [
+      "Data and artifact versioning",
+      "Evaluation before promotion",
+      "A known-good rollback target"
+    ],
+    "rightTitle": "Operational safeguards",
+    "right": [
+      "Persistent telemetry and alerts",
+      "Access controls and request limits",
+      "Labels to evaluate real predictions"
+    ],
+    "notes": "0:55–0:57. Be precise: this workshop demonstrates the foundations, not a complete production system. Direct dependencies are pinned but there is no full immutable environment lock. The tiny model has public teaching data and no authentication or rate limiting. In real deployments, choose safeguards appropriate to traffic and data. A model registry and automated training pipeline are possible next steps, not prerequisites for understanding the lifecycle."
+  },
+  {
+    "type": "flow",
+    "title": "You took a model beyond the notebook",
+    "steps": [
+      [
+        "Train",
+        "Evaluate honestly"
+      ],
+      [
+        "Package",
+        "Keep the pipeline"
+      ],
+      [
+        "Deploy",
+        "Verify a real call"
+      ],
+      [
+        "Monitor",
+        "Investigate change"
+      ]
+    ],
+    "detail": "Can you explain one prediction from click to response?",
+    "notes": "0:57–0:59. Have students explain the path to a neighbor. Ask them to name an artifact, an endpoint, a test, and a useful monitoring signal. Point to docs/WORKSHOP.md and docs/SOLUTIONS.md for follow-up. Stop unused Codespaces after the event. The presenter should remove the shared hosting service when no longer needed."
+  },
+  {
+    "type": "closing",
+    "title": "Questions?",
+    "subtitle": "What would you deploy next?",
+    "detail": "Thanks for building with SoDA",
+    "notes": "0:59–1:00. Take one or two questions. Suggested extension: add a validation split, compare a candidate model in a separate artifact directory, and design a feedback route for trusted labels. Ask officers for help after the session. Event date, RSVP link, and final repository URL remain organizer-supplied items."
+  }
+]

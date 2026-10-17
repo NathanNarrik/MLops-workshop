@@ -1,0 +1,37 @@
+name: Test and package
+on: [push, pull_request, workflow_dispatch]
+permissions:
+  contents: read
+jobs:
+  verify:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-python@v5
+        with:
+          python-version: '3.12'
+          cache: pip
+      - run: python -m pip install -r requirements-dev.txt
+      - run: ruff check .
+      - run: pytest -q
+      - run: python scripts/check_notebook.py
+      - run: python -m ml.train
+      - uses: actions/setup-node@v4
+        with:
+          node-version: '22'
+          cache: npm
+      - run: npm ci
+      - run: npx playwright install --with-deps chromium
+      - name: Build production image
+        run: docker build -t soda-digit-lab:test .
+      - name: Verify the packaged service
+        shell: bash
+        run: |
+          docker run -d --name digit-lab -p 8000:8000 soda-digit-lab:test
+          trap 'docker logs digit-lab; docker rm -f digit-lab' EXIT
+          for attempt in {1..30}; do
+            if curl -fsS http://localhost:8000/health; then break; fi
+            sleep 2
+          done
+          python scripts/smoke.py --url http://localhost:8000
+          npm run test:browser

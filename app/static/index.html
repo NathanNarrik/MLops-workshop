@@ -1,0 +1,147 @@
+<!doctype html>
+<html lang="en">
+  <head>
+    <meta charset="UTF-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1" />
+    <title>SoDA Digit Lab</title>
+    <link rel="stylesheet" href="/static/style.css" />
+    <script src="/static/app.js" type="module"></script>
+  </head>
+  <body>
+    <header>
+      <a class="brand" href="/">SoDA<span>Digit Lab</span></a>
+      <nav aria-label="Resources">
+        <a href="/docs">API docs ↗</a><a href="/model">Model card ↗</a
+        ><a href="/metrics">Metrics ↗</a>
+      </nav>
+    </header>
+    <main>
+      <section class="intro">
+        <p class="eyebrow">ASU · MLOPS WORKSHOP</p>
+        <h1>You trained a model.<br /><span>Now ship it.</span></h1>
+        <p>
+          Draw a digit. Send it to a real API. See what happens after
+          deployment.
+        </p>
+        <p class="flow">
+          01 Train <span>→</span> 02 Package <span>→</span> 03 Deploy
+          <span>→</span> 04 Monitor
+        </p>
+      </section>
+      <section class="lab" aria-label="Prediction lab">
+        <div class="draw-panel">
+          <div class="section-heading">
+            <h2>01 / Your input</h2>
+            <span>8 × 8 pixels</span>
+          </div>
+          <canvas
+            id="canvas"
+            width="280"
+            height="280"
+            aria-label="Draw a digit from zero to nine. You can also select a labeled sample below."
+          ></canvas>
+          <p class="hint">
+            Draw one digit. We crop and center your ink before predicting.
+          </p>
+          <div class="actions">
+            <button id="predict">Predict digit <span>↗</span></button
+            ><button id="clear" class="secondary">Clear</button>
+          </div>
+          <label for="sample">Or try a held-out example</label
+          ><select id="sample">
+            <option value="">Choose a digit…</option>
+          </select>
+          <p class="hint">
+            These examples come from the test split. Your handwriting may look
+            different.
+          </p>
+          <div class="input-preview">
+            <canvas id="input-preview" width="8" height="8"
+              aria-label="The exact 8 by 8 pixel image sent to the model"></canvas>
+            <p class="hint">What the model sees<br />8 × 8 pixels, values 0–16</p>
+          </div>
+        </div>
+        <div class="result-panel">
+          <div class="section-heading">
+            <h2>02 / Model response</h2>
+            <span id="status" role="status">Connecting…</span>
+          </div>
+          <div class="prediction">
+            <strong id="digit">?</strong>
+            <div>
+              <span id="confidence">Waiting for input</span>
+              <p>Model score, not a guarantee.</p>
+            </div>
+          </div>
+          <div
+            id="probabilities"
+            aria-label="Scores for digits zero through nine"
+          ></div>
+          <p id="message" role="status">
+            Choose a sample or draw your first digit.
+          </p>
+          <details>
+            <summary>What did the API return?</summary>
+            <pre id="response">
+POST /predict
+{"pixels": [64 numbers from 0 to 16]}</pre
+            >
+          </details>
+          <p class="model-version" id="version">Model version loading…</p>
+        </div>
+      </section>
+      <section class="monitor" aria-labelledby="monitor-title">
+        <div class="section-heading">
+          <div>
+            <p class="eyebrow">LIVE SERVICE METRICS</p>
+            <h2 id="monitor-title">03 / What changes in production?</h2>
+          </div>
+          <span id="refresh-status">Refreshes every 3 seconds</span>
+        </div>
+        <div class="metrics">
+          <div>
+            <strong id="requests">0</strong><span>Prediction requests</span>
+          </div>
+          <div><strong id="errors">0%</strong><span>Error rate</span></div>
+          <div>
+            <strong id="latency">0 ms</strong><span>Recent p95 latency</span>
+          </div>
+          <div>
+            <strong id="uncertain">0</strong><span>Scores below 80%</span>
+          </div>
+        </div>
+        <div class="shift">
+          <div>
+            <h3>Input brightness check</h3>
+            <p id="shift-message">Waiting for predictions.</p>
+          </div>
+          <span id="shift-status">Collecting data</span>
+        </div>
+        <p class="hint">
+          The alert compares mean pixel brightness in the latest 100 predictions
+          with training data. It needs 20 predictions and a shift above 2
+          training standard deviations. This is a teaching heuristic, not a
+          formal drift test.
+        </p>
+        <div class="experiments">
+          <button id="normal" class="secondary">Send 30 normal samples</button
+          ><button id="shifted" class="secondary">
+            Send 30 brighter samples</button
+          ><button id="invalid" class="secondary">
+            Send an invalid request
+          </button>
+        </div>
+        <p id="experiment-message" role="status"></p>
+        <p class="hint">
+          Metrics live in one server process and reset on restart. Accuracy
+          requires labeled outcomes and cannot be measured from these requests
+          alone.
+        </p>
+      </section>
+    </main>
+    <footer>
+      <span>SoDA · Software Developers Association at ASU</span
+      ><span>Train → Package → Deploy → Monitor</span>
+    </footer>
+  </body>
+</html>
