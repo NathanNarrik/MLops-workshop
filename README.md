@@ -21,6 +21,17 @@ The first 15 minutes introduce ML and core MLOps concepts for beginners. The liv
 
 No GPU, API key, database, or external dataset download is needed after dependency setup. The small digits dataset ships with scikit-learn. Keep the terminal running. After restarting a Codespace, run `bash scripts/start.sh` again.
 
+The startup script checks and installs the pinned Python dependencies before training or serving. Its first run may take a few minutes; subsequent runs reuse installed packages. This also recovers from an incomplete Codespaces setup.
+
+If an older checkout fails with `ModuleNotFoundError: No module named 'joblib'` (or another dependency), run:
+
+```bash
+git pull --ff-only
+bash scripts/start.sh
+```
+
+You can also repair the current environment directly with `python -m pip install -r requirements-dev.txt`. Use `python -m pip` so installation targets the same interpreter that runs the app. Wait for **Application startup complete**, then open port **8000** in the **Ports** tab.
+
 ## The demo
 
 - Draw a digit or select a real held-out example.

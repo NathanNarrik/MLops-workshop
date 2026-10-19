@@ -11,6 +11,22 @@ jobs:
         with:
           python-version: '3.12'
           cache: pip
+      - name: Start from an empty Python environment
+        timeout-minutes: 10
+        shell: bash
+        run: |
+          python -m venv "$RUNNER_TEMP/workshop-startup"
+          source "$RUNNER_TEMP/workshop-startup/bin/activate"
+          python -c "import importlib.util; assert importlib.util.find_spec('joblib') is None"
+          PORT=8010 bash scripts/start.sh > "$RUNNER_TEMP/workshop-startup.log" 2>&1 &
+          server_pid=$!
+          trap 'kill "$server_pid" 2>/dev/null || true; cat "$RUNNER_TEMP/workshop-startup.log"' EXIT
+          for attempt in {1..180}; do
+            if curl -fsS http://localhost:8010/health; then break; fi
+            if ! kill -0 "$server_pid" 2>/dev/null; then exit 1; fi
+            sleep 2
+          done
+          python scripts/smoke.py --url http://localhost:8010
       - run: python -m pip install -r requirements-dev.txt
       - run: ruff check .
       - run: pytest -q

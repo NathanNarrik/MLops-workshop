@@ -1,6 +1,11 @@
 #!/usr/bin/env bash
 set -euo pipefail
 cd "$(dirname "$0")/.."
+printf '\nChecking workshop dependencies (the first run may take a few minutes)...\n'
+# Use the same interpreter for installation, training, and serving. A Codespace
+# may have skipped or interrupted postCreateCommand, or switched Python envs.
+# pip reuses installed packages when all pinned requirements are satisfied.
+python -m pip install --disable-pip-version-check -r requirements-dev.txt
 if [ ! -f artifacts/model.joblib ]; then
   python -m ml.train
 fi

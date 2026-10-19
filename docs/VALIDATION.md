@@ -14,3 +14,9 @@ Checked locally on October 17, 2026 with Python 3.12 on Windows.
 Docker Desktop's Linux engine was unavailable locally. The container build and Codespaces setup were not executed in this session, and no Render deployment was created. The GitHub Actions workflow is configured to build the Docker image and run the smoke check on Linux after the repository is pushed. A workflow file is not evidence of a successful remote CI run.
 
 Before presenting, run the fresh-Codespace and hosted-deployment rehearsal in `PRESENTER.md`. Hosting behavior, network access, dependency resolution, and account quota can differ from this local environment.
+
+## October 19 startup recovery check
+
+The startup script was exercised locally through Git Bash with a fresh Python 3.12 virtual environment that had no `joblib` and a separate repository copy with no model artifacts. It installed the requirements, trained the model, started the API, and passed the live smoke check (readiness, prediction, model version, validation, and monitoring). CI now repeats the empty-environment startup check on Linux. The updated dev container waits for `postCreateCommand` before attaching.
+
+The previous [Test and package run](https://github.com/asusoda/MLops-workshop/actions/runs/39072003731) succeeded for commit `cda9930`, including the Docker build, container smoke check, and Linux browser tests. That supersedes the earlier local-only container limitation above; it does not verify the user's Codespace setup logs or a hosted Render deployment.
