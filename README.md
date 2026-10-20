@@ -50,13 +50,107 @@ The original Python base image contained an unused Yarn apt repository with a mi
 - The data drift gallery pairs original and brighter images with actual predictions. It highlights wrong answers that still returned HTTP 200.
 - Docker packages the same application for a hosted deployment.
 
-**Workshop guide:** [student exercises](docs/WORKSHOP.md) · [presenter runbook](docs/PRESENTER.md) · [deployment walkthrough](docs/DEPLOYMENT.md) · [solutions](docs/SOLUTIONS.md)
+**Workshop guide:** [student exercises](docs/WORKSHOP.md) · [presenter runbook](docs/PRESENTER.md) · [deployment walkthrough](docs/DEPLOYMENT.md)
 
 See [verification results and remaining rehearsal steps](docs/VALIDATION.md) for what has been tested locally.
 
 **Updating an older copy:** if drawings all predict 4, update the repository, stop the server, run `python -m ml.train`, and restart the server. Reload the browser with **Ctrl+Shift+R**. The revised model uses `MinMaxScaler` + a nonlinear `SVC`, and the drawing interface normalizes the ink before inference. `/model` should show `classifier: "SVC"`.
 
 **Slides:** [`slides/SoDA-MLOps-Workshop.pptx`](slides/SoDA-MLOps-Workshop.pptx). Editable PowerPoint with presenter notes, using the supplied SoDA theme. Install Space Grotesk for matching text appearance on another computer.
+
+## Workshop demo flow
+
+Follow this sequence after the beginner concept slides. Start the app using the Codespaces instructions above, choose a held-out digit, and click **Predict digit**. Compare its known label with the prediction, then try your own handwriting.
+
+Keep the server running in the first terminal. Run the exercise commands in a **second terminal**, from the repository root.
+
+### Exercise 1: your model artifact — Train
+
+Run the training notebook, then run the same repeatable training process from the terminal:
+
+```bash
+python -m ml.train
+```
+
+Open `artifacts/metadata.json` and investigate:
+
+1. Find `test_accuracy`. How many examples were used to evaluate the model?
+2. Find `model_version` and the `input` contract. What shape and pixel values does the model expect?
+3. Explain why training accuracy alone is not enough to decide whether a model is ready to use.
+
+**Checkpoint:** `artifacts/` contains `model.joblib`, `metadata.json`, and `samples.json`. Explain what each file contributes to the application. The model artifact includes both the fitted preprocessing and classifier.
+
+The running API loads its artifact only at startup. After training, stop the server in the first terminal with **Ctrl+C**, run `bash scripts/start.sh` again, and refresh the app. Compare the version shown by the app with the metadata.
+
+### Exercise 2: an invalid request — Package and serve
+
+Open `app/main.py` and locate `PredictionInput` and `POST /predict`. First verify a valid prediction and the service contract:
+
+```bash
+python scripts/smoke.py
+```
+
+The smoke check also sends an invalid input, so note the current counters before the next command. Now inspect one deliberately invalid request:
+
+```bash
+python scripts/traffic.py --mode invalid --count 1
+```
+
+1. Compare the original and sent images in the terminal. Read the actual JSON body: which pixel breaks the input contract?
+2. Read the HTTP status and response. Find the field location in `detail`, the explanation, `model_ran`, and `request_id`.
+3. In the dashboard, open **Inspect a real request** and **Error log**. Match the request ID to the terminal output and inspect the image and JSON together.
+4. Check the dashboard error rate and compare `requests`, `errors`, and `predictions` in `/stats`. Explain whether the model ran.
+
+To read `/stats`, click **Stats JSON** in the app header or append `/stats` to your forwarded Codespaces URL. From the second terminal:
+
+```bash
+curl -s http://localhost:8000/stats | python -m json.tool
+```
+
+**Checkpoint:** The invalid request returns **HTTP 422**. Explain which input rule it violated and why rejected inputs never reach prediction. Reading `/stats` does not add a prediction request.
+
+### Deployment demo — Deploy
+
+Follow the instructor's [deployment walkthrough](docs/DEPLOYMENT.md). Inspect how the Docker image packages the model and API, then open the hosted app and its `/health` endpoint. Explain how this hosted URL differs from a Codespaces forwarded port.
+
+After the instructor shares the deployed URL, verify it from the second terminal, replacing the placeholder:
+
+```bash
+python scripts/smoke.py --url https://YOUR-SERVICE.onrender.com
+```
+
+Return to your own Codespaces app for the monitoring exercise so your counters reflect your own traffic.
+
+### Exercise 3: what does the alert prove? — Monitor
+
+Send normal inputs first, then brighter inputs:
+
+```bash
+python scripts/traffic.py --mode normal --count 30
+python scripts/traffic.py --mode shifted --count 30
+```
+
+You can also use the dashboard's **Send 30 normal samples** and **Send 30 brighter samples** buttons. Watch the brightness check, model scores, and **Data drift: the inputs changed** gallery.
+
+This simulates **data drift** caused by a camera exposure change: add 8 to each pixel, capped at 16. The known digit label stays the same, but the input distribution changes. Compare each original image with the actual brighter image sent to the API, its predicted digit, and its known label. Click **Inspect request** to see the corresponding JSON and response.
+
+Discuss what the evidence tells you:
+
+1. Does **HTTP 200** mean the predicted digit is correct?
+2. Does an input-shift alert prove accuracy dropped?
+3. Which true labels would you need to measure prediction quality?
+
+The gallery uses known labels for ten repeated teaching examples; its results are not a fresh accuracy benchmark. The brightness alert is a signal to investigate, and does not measure accuracy itself.
+
+Replace the entire 100-prediction monitoring window with normal inputs:
+
+```bash
+python scripts/traffic.py --mode normal --count 100
+```
+
+**Checkpoint:** Observe the brightness alert clear. Explain the difference between a failed HTTP request, an incorrect prediction, and a change in input data. Keep the server running during recovery: restarting would erase the monitoring history.
+
+**Wrap-up:** Trace one prediction from image → JSON request → validation → saved pipeline → response → monitoring. Identify where each of the three exercises fits in **Train → Package → Deploy → Monitor**.
 
 ## Run locally
 
@@ -123,7 +217,7 @@ Port 8001 lets the container run beside the development server on 8000. The buil
 | `.devcontainer/` | Codespaces environment |
 | `Dockerfile`, `render.yaml` | Deployable container and Render Blueprint |
 | `.github/workflows/ci.yml` | Lint, tests, container build and smoke check |
-| `docs/` | Student guide, facilitator script, deployment and answers |
+| `docs/` | Student guide, presenter runbook, deployment and verification |
 | `slides/` | Deck, editable slide content and authoring source |
 | `event/` | Event artwork and announcement copy with honest TBD fields |
 
