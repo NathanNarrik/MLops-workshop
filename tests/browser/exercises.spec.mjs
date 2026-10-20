@@ -22,6 +22,9 @@ try {
   assert.match(output, /"pixels": \[99/);
   assert.match(output, /HTTP 422/);
   assert.match(output, /"model_ran": false/);
+  assert(!output.includes('pixels[0] = 99'), 'do not print the exercise answer');
+  assert(!output.includes('"msg":'));
+  assert(!output.includes('"type":'));
   const entry = (await get('/requests')).errors[0];
   assert(output.includes(entry.request_id));
   await page.waitForFunction(id => document.querySelector('#error-log').textContent.includes(id), entry.request_id);

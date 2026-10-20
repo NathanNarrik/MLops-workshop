@@ -100,7 +100,9 @@ def create_app(artifact_dir: Path | None = None) -> FastAPI:
     async def validation_error(request, exc):
         # FastAPI rejects invalid inputs BEFORE predict() runs. This is an HTTP
         # contract failure, not a wrong model prediction. Keep JSON safe for NaN.
-        details = [{key: error[key] for key in ("loc", "msg", "type")} for error in exc.errors()]
+        # Show where validation failed; students diagnose why from the request
+        # and input contract rather than a field-level answer in the response.
+        details = [{"loc": error["loc"]} for error in exc.errors()]
         content = {
             "error": "invalid_prediction_input",
             "message": "Request rejected before inference. Check the fields in detail.",

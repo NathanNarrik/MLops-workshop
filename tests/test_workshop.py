@@ -63,7 +63,7 @@ def test_error_explanation_correlates_with_journal_and_does_not_run_model(client
     body = response.json()
     assert response.status_code == 422
     assert body["model_ran"] is False
-    assert body["detail"][0]["loc"] == ["body", "pixels", 0]
+    assert body["detail"] == [{"loc": ["body", "pixels", 0]}]
     assert response.headers["x-request-id"] == body["request_id"]
     history = client.get("/requests").json()
     entry = history["errors"][0]
@@ -132,7 +132,9 @@ def test_nonfinite_inputs_return_valid_json_errors(client, value):
         "/predict", content=payload, headers={"Content-Type": "application/json"}
     )
     assert response.status_code == 422
-    assert response.json()["detail"][0]["type"] == "finite_number"
+    assert response.json()["detail"] == [
+        {"loc": ["body", "pixels", index]} for index in range(64)
+    ]
     assert len(client.get("/requests").json()["errors"]) == 1
     assert client.get("/stats").json()["errors"] == 1
 

@@ -54,10 +54,6 @@ def main():
             if args.mode != "invalid" or exc.code != 422:
                 raise
             show_response(exc.code, json.load(exc))
-            print(
-                "pixels[0] = 99 exceeds 16. Rejected BEFORE inference; "
-                "predictions did not increase."
-            )
         time.sleep(0.1)
     with urllib.request.urlopen(base + "/stats", timeout=30) as response:
         print(f"\nGET {base}/stats (read-only monitoring)")

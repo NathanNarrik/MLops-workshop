@@ -102,7 +102,7 @@ async function refreshJournal() {
   $("error-log").replaceChildren(...history.errors.map((entry) => {
     const button = document.createElement("button");
     button.className = "secondary alert";
-    const detail = (entry.response.detail || []).map((d) => `${d.loc.join(".")}: ${d.msg}`).join("; ");
+    const detail = (entry.response.detail || []).map((d) => d.loc.join(".")).join("; ");
     button.textContent = `${entry.timestamp} · HTTP ${entry.status} · ${detail || entry.response.message} · ID ${entry.request_id}`;
     button.onclick = () => { inspectedId = entry.request_id; inspectRequest(entry); };
     return button;
@@ -293,7 +293,7 @@ async function experiment(mode) {
     }
     $("experiment-message").textContent =
       mode === "invalid"
-        ? "HTTP 422: pixels[0] is 99 (maximum 16). Model did not run. See the request inspector and error log below."
+        ? "HTTP 422. Inspect the request and response below. Which input rule was violated?"
         : `${count} ${mode} requests sent. Compare the monitoring numbers.`;
     await refresh();
   } catch (e) {
