@@ -1,0 +1,15 @@
+name: Codespaces environment
+on: [push, pull_request, workflow_dispatch]
+permissions:
+  contents: read
+jobs:
+  devcontainer:
+    runs-on: ubuntu-latest
+    timeout-minutes: 20
+    steps:
+      - uses: actions/checkout@v4
+      - name: Build and exercise the actual Codespaces configuration
+        uses: devcontainers/ci@v0.3
+        with:
+          push: never
+          runCmd: bash scripts/check_devcontainer.sh

@@ -32,6 +32,12 @@ bash scripts/start.sh
 
 You can also repair the current environment directly with `python -m pip install -r requirements-dev.txt`. Use `python -m pip` so installation targets the same interpreter that runs the app. Wait for **Application startup complete**, then open port **8000** in the **Ports** tab.
 
+### Codespace says it is in recovery mode
+
+In the recovery terminal, run `git pull --ff-only`. Then press **Ctrl+Shift+P**, choose **Codespaces: Rebuild Container** (or **Dev Containers: Rebuild Container** in desktop VS Code), and wait for setup to finish. Run `bash scripts/start.sh` after it reopens.
+
+The original Python base image contained an unused Yarn apt repository with a missing signing key (`NO_PUBKEY 62D54FD4003F6525`). That broke installation of the Docker feature before Python setup could run. `.devcontainer/Dockerfile` removes the unused repository before Features install. Rebuilding is required to leave the recovery container; installing packages in that temporary container does not repair the build. The **Codespaces environment** workflow builds and starts the same dev container configuration, checks Python and Docker, and exercises the API.
+
 ## The demo
 
 - Draw a digit or select a real held-out example.
