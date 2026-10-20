@@ -6,6 +6,110 @@ const ctx = canvas.getContext("2d", { willReadFrequently: true });
 let samples = [],
   selectedPixels = null,
   drawing = false;
+let requestHistory = [], inspectableHistory = [], inspectedId = null;
+
+function paintImage(target, values = []) {
+  const context = target.getContext("2d");
+  for (let i = 0; i < 64; i++) {
+    const value = values[i];
+    const shade = value / 16 * 255;
+    context.fillStyle = value === undefined ? "#3a64e4"
+      : typeof value !== "number" || value < 0 || value > 16 ? "#ff4080"
+      : `rgb(${shade},${shade},${shade})`;
+    context.fillRect(i % 8, Math.floor(i / 8), 1, 1);
+  }
+}
+function inspectRequest(entry) {
+  if (!entry) return;
+  $("request-select").value = entry.request_id;
+  $("request-meta").textContent = `${entry.timestamp} · HTTP ${entry.status} · ${entry.latency_ms} ms · ID ${entry.request_id}`;
+  paintImage($("request-image"), entry.request.pixels);
+  // Keep each group of eight together so students can trace image rows to JSON.
+  let requestJSON = JSON.stringify(entry.request, null, 2);
+  if (Array.isArray(entry.request.pixels)) {
+    const rows = [];
+    for (let i = 0; i < entry.request.pixels.length; i += 8) {
+      rows.push("    " + entry.request.pixels.slice(i, i + 8).map(v => JSON.stringify(v)).join(", "));
+    }
+    requestJSON = requestJSON.replace(/"pixels": \[[\s\S]*?\]/,
+      '"pixels": [\n' + rows.join(",\n") + '\n  ]');
+  }
+  $("request-json").textContent = requestJSON;
+  $("request-result").textContent = JSON.stringify(entry.response, null, 2);
+}
+$("request-select").addEventListener("change", (event) => {
+  inspectedId = event.target.value;
+  inspectRequest(inspectableHistory.find((entry) => entry.request_id === inspectedId));
+});
+function renderDrift() {
+  let observed = 0, wrong = 0;
+  const cards = samples.map((sample) => {
+    const brighter = sample.pixels.map((v) => Math.min(16, v + 8));
+    const entry = requestHistory.find((r) => r.status === 200 &&
+      JSON.stringify(r.request.pixels) === JSON.stringify(brighter));
+    const card = document.createElement("div");
+    card.className = "drift-card";
+    const title = document.createElement("p");
+    title.textContent = `Known label: ${sample.label} · original → brighter`;
+    const pair = document.createElement("div");
+    pair.className = "drift-pair";
+    [sample.pixels, brighter].forEach((values, i) => {
+      const picture = document.createElement("canvas");
+      picture.width = picture.height = 8;
+      picture.setAttribute("aria-label", `${i ? "Brighter" : "Original"} digit ${sample.label}`);
+      paintImage(picture, values);
+      pair.append(picture);
+    });
+    const result = document.createElement("p");
+    result.textContent = "Preview — not in recent requests yet";
+    if (entry) {
+      observed++;
+      const incorrect = entry.response.digit !== sample.label;
+      wrong += Number(incorrect);
+      result.className = incorrect ? "alert" : "";
+      result.textContent = `HTTP 200 · predicted ${entry.response.digit} · ${(entry.response.confidence * 100).toFixed(1)}% score · ${incorrect ? "WRONG" : "correct"}`;
+      const inspect = document.createElement("button");
+      inspect.className = "secondary";
+      inspect.textContent = "Inspect request";
+      inspect.onclick = () => {
+        inspectedId = entry.request_id;
+        inspectRequest(entry);
+        $("inspector-title").scrollIntoView({behavior: "smooth"});
+      };
+      card.append(inspect);
+    }
+    card.prepend(title, pair, result);
+    return card;
+  });
+  $("drift-examples").replaceChildren(...cards);
+  $("drift-summary").textContent = observed
+    ? `${wrong} of ${observed} distinct brighter examples were misclassified. All returned HTTP 200.`
+    : "Preview only — brighter examples have not been sent yet.";
+}
+async function refreshJournal() {
+  const history = await api("/requests");
+  requestHistory = history.requests;
+  // Errors stay inspectable even after 50 newer successful requests arrive.
+  inspectableHistory = [...requestHistory, ...history.errors.filter((error) =>
+    !requestHistory.some((entry) => entry.request_id === error.request_id))];
+  $("request-select").replaceChildren(...inspectableHistory.map((entry) => {
+    const option = document.createElement("option");
+    option.value = entry.request_id;
+    option.textContent = `${entry.timestamp.slice(11, 19)} UTC · HTTP ${entry.status} · ${entry.response.digit === undefined ? "Rejected / failed" : `digit ${entry.response.digit}`} · ${entry.request_id.slice(0, 8)}`;
+    return option;
+  }));
+  inspectRequest(inspectableHistory.find((entry) => entry.request_id === inspectedId) || requestHistory[0]);
+  $("error-log").replaceChildren(...history.errors.map((entry) => {
+    const button = document.createElement("button");
+    button.className = "secondary alert";
+    const detail = (entry.response.detail || []).map((d) => `${d.loc.join(".")}: ${d.msg}`).join("; ");
+    button.textContent = `${entry.timestamp} · HTTP ${entry.status} · ${detail || entry.response.message} · ID ${entry.request_id}`;
+    button.onclick = () => { inspectedId = entry.request_id; inspectRequest(entry); };
+    return button;
+  }));
+  if (!history.errors.length) $("error-log").textContent = "No errors recorded.";
+  renderDrift();
+}
 function clear() {
   ctx.fillStyle = "#000";
   ctx.fillRect(0, 0, 280, 280);
@@ -160,12 +264,14 @@ async function refresh() {
     $("refresh-status").textContent = "Live · refreshes every 3 seconds";
     $("status").textContent = "API ready";
     $("version").textContent = s.model_version;
+    await refreshJournal();
   } catch {
     $("status").textContent = "API offline";
     $("refresh-status").textContent = "Connection lost · retrying";
   }
 }
 async function experiment(mode) {
+  inspectedId = null;
   const buttons = ["normal", "shifted", "invalid"];
   buttons.forEach((id) => ($(id).disabled = true));
   const count = mode === "invalid" ? 1 : 30;
@@ -173,7 +279,7 @@ async function experiment(mode) {
     for (let i = 0; i < count; i++) {
       let input = samples[i % samples.length].pixels;
       if (mode === "shifted") input = input.map((v) => Math.min(16, v + 8));
-      if (mode === "invalid") input = [99];
+      if (mode === "invalid") input = [99, ...input.slice(1)];
       try {
         await api("/predict", { pixels: input });
         if (mode === "invalid")
@@ -187,7 +293,7 @@ async function experiment(mode) {
     }
     $("experiment-message").textContent =
       mode === "invalid"
-        ? "HTTP 422: input rejected. The error rate increased."
+        ? "HTTP 422: pixels[0] is 99 (maximum 16). Model did not run. See the request inspector and error log below."
         : `${count} ${mode} requests sent. Compare the monitoring numbers.`;
     await refresh();
   } catch (e) {

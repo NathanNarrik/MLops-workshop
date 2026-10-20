@@ -1,5 +1,18 @@
 # Verification record
 
+## October 20 exercise walkthrough checks
+
+- **23 API/model tests passed**, including request/response/header ID correlation, exact invalid-pixel location, rejection before inference, bounded history, retained errors after successful traffic, and safe JSON for malformed/nonfinite inputs.
+- **Notebook and lint passed:** all cells executed in a fresh kernel; `ruff check .` passed.
+- **Live scripts passed:** smoke and traffic commands print original/sent terminal images, actual JSON bodies, complete responses, known-label comparisons, and `/stats`.
+- **Browser checks passed in Edge:** the existing drawing regression suite plus CLI-to-dashboard error correlation, invalid-pixel rendering, actual brighter-image/JSON equality, real prediction comparisons for all ten samples, inspecting retained errors after the recent request window fills, and mobile layout without overflow or JavaScript exceptions.
+- **Observed drift example:** 9 of 10 distinct brighter teaching examples were misclassified, all with HTTP 200. These repeated samples illustrate a failure; they are not an independent estimate of model accuracy. Original drawing regression fixtures still pass.
+- Dashboard screenshots were visually checked at desktop and mobile sizes. The request inspector displays pixel arrays in rows of eight while retaining valid JSON.
+
+The [Codespaces environment run for the preceding setup fix](https://github.com/asusoda/MLops-workshop/actions/runs/39345713311) passed, including the dev container build/start and API checks. Local Docker remains unavailable; the new exercise changes require their own remote CI run after push. No Render deployment was created.
+
+## Original local checks
+
 Checked locally on October 17, 2026 with Python 3.12 on Windows.
 
 - **20 tests passed:** quality gate, failed-candidate protection, full held-out serving parity, prediction contract, invalid/nonfinite inputs, input-shift detection and recovery, readiness, static resources, and missing/corrupt artifacts.

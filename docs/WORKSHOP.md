@@ -47,6 +47,21 @@ python scripts/traffic.py --mode invalid --count 1
 
 **Exercise 2:** Explain the 422 response. Did the model run? Check the dashboard error rate and prediction count in `/stats`.
 
+The script prints the **original image beside the sent image**, followed by the actual POST URL, JSON body, HTTP status, and complete response. `!!` marks an invalid pixel in the terminal; pink marks it in the dashboard. We keep 64 pixels but change the first to 99, so `detail` points to `body.pixels.0`: the maximum is 16. `model_ran: false` confirms validation stopped inference. `requests` and `errors` increase; `predictions` does not.
+
+In the dashboard, scroll to **Inspect a real request** and **Error log**. Requests from scripts appear here too. Select an entry to see its image, JSON, field errors, timestamp, and latency. Match `request_id` across the script response, server terminal, and dashboard. The demo retains 50 recent requests and 20 errors in memory; restart clears them. Pixel logging is for public teaching examples, not sensitive production data.
+
+### How to open `/stats`
+
+- **Browser:** click **Stats JSON** in the app header. In Codespaces, use the forwarded URL, e.g. `https://YOUR-CODESPACE-8000.app.github.dev/stats`. Do not browse to `0.0.0.0`.
+- **Second Codespaces terminal** (leave the server running in the first):
+
+```bash
+curl -s http://localhost:8000/stats | python -m json.tool
+```
+
+`GET /stats` reads monitoring JSON and does not increment the prediction counter. `requests` counts all prediction attempts; `predictions` counts completed inference; `errors` counts HTTP failures. `error_rate` is a fraction (0.25 = 25%). `GET /requests` reads the bounded request/error log. `POST /predict` sends image JSON in a request body; opening `/predict` in the browser address bar sends GET and returns 405.
+
 Run `python -m pytest -q`. The tests compare every held-out example through the API with the offline evaluation. This catches mismatched training and serving preprocessing.
 
 **Checkpoint:** A valid request succeeds, an invalid request fails, and you can identify the running model version.
@@ -77,6 +92,17 @@ python scripts/smoke.py --url http://localhost:8001
 In your own app, click **Send 30 normal samples**, then **Send 30 brighter samples**. Watch the brightness check and model scores.
 
 **Exercise 3:** Does a successful HTTP response prove the model is right? Does a brightness alert prove accuracy decreased? What labels would you need to answer that?
+
+This is an example of **data drift**: new inputs have a different distribution from the training inputs. Imagine a camera's exposure changes. We simulate this by adding 8 to every pixel and capping at 16; a background that was black becomes gray. We do not change the known digit label. This demonstrates input drift, not a change in the meaning of the labels (concept drift).
+
+Scroll to **Data drift: the inputs changed**. Before sending traffic, the images are previews. Afterward, each pair shows the original labeled image, the exact brighter image sent, and its actual returned prediction and score. Pink **WRONG** results make the failure visible even though HTTP status is 200. Click **Inspect request** to connect an image to its JSON. The same exercise from a terminal is:
+
+```bash
+python scripts/traffic.py --mode shifted --count 1  # slowly inspect one full exchange
+python scripts/traffic.py --mode shifted --count 30 # enough traffic for the alert
+```
+
+The script compares responses with known labels kept on the client, never sent as model inputs. These are 10 repeated teaching examples, not an independent accuracy estimate. The monitoring brightness check is a heuristic over recent inputs, not proof of quality loss. Production quality monitoring needs labeled outcomes or a separate evaluation workflow. Recent example results disappear when those requests leave the 50-entry history; errors have a separate 20-entry log.
 
 Restore the input window:
 

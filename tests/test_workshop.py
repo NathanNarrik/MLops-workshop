@@ -56,6 +56,54 @@ def test_prediction_contract(client):
     assert result["model_version"] == client.get("/health").json()["model_version"]
 
 
+def test_error_explanation_correlates_with_journal_and_does_not_run_model(client):
+    sample = client.get("/samples").json()[0]
+    pixels = [99, *sample["pixels"][1:]]
+    response = client.post("/predict", json={"pixels": pixels})
+    body = response.json()
+    assert response.status_code == 422
+    assert body["model_ran"] is False
+    assert body["detail"][0]["loc"] == ["body", "pixels", 0]
+    assert response.headers["x-request-id"] == body["request_id"]
+    history = client.get("/requests").json()
+    entry = history["errors"][0]
+    assert entry == history["requests"][0]
+    assert entry["request"] == {"pixels": pixels}
+    assert entry["response"] == body
+    assert entry["request_id"] == body["request_id"]
+    stats = client.get("/stats").json()
+    assert stats["requests"] == stats["errors"] == 1
+    assert stats["predictions"] == stats["window_size"] == 0
+
+
+def test_journal_is_bounded_and_errors_survive_normal_traffic(client):
+    for _ in range(25):
+        client.post("/predict", json={"pixels": [99] * 64})
+    first_error = client.get("/requests").json()["errors"][0]
+    for _ in range(55):
+        client.post("/predict", json={"pixels": [0] * 64})
+    history = client.get("/requests").json()
+    assert len(history["requests"]) == 50
+    assert len(history["errors"]) == 20
+    assert history["errors"][0] == first_error
+    assert all(entry["status"] == 200 for entry in history["requests"])
+    assert len({entry["request_id"] for entry in history["requests"]}) == 50
+    assert client.get("/stats").json()["requests"] == 80
+
+
+def test_journal_summarizes_malformed_payloads_without_retaining_extra_values(client):
+    client.post("/predict", json={"pixels": [0] * 70, "token": "not-for-the-log"})
+    entry = client.get("/requests").json()["requests"][0]
+    assert len(entry["request"]["pixels"]) == 64
+    assert entry["request"]["received_pixel_count"] == 70
+    assert "not-for-the-log" not in json.dumps(entry)
+    response = client.post(
+        "/predict", content=b'{"pixels":', headers={"Content-Type": "application/json"}
+    )
+    assert response.status_code == 422
+    assert client.get("/requests").json()["errors"][0]["response"]["model_ran"] is False
+
+
 @pytest.mark.parametrize(
     "payload",
     [
@@ -85,6 +133,7 @@ def test_nonfinite_inputs_return_valid_json_errors(client, value):
     )
     assert response.status_code == 422
     assert response.json()["detail"][0]["type"] == "finite_number"
+    assert len(client.get("/requests").json()["errors"]) == 1
     assert client.get("/stats").json()["errors"] == 1
 
 

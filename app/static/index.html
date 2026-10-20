@@ -12,7 +12,7 @@
       <a class="brand" href="/">SoDA<span>Digit Lab</span></a>
       <nav aria-label="Resources">
         <a href="/docs">API docs ↗</a><a href="/model">Model card ↗</a
-        ><a href="/metrics">Metrics ↗</a>
+        ><a href="/metrics">Metrics ↗</a><a href="/stats">Stats JSON ↗</a>
       </nav>
     </header>
     <main>
@@ -137,6 +137,28 @@ POST /predict
           requires labeled outcomes and cannot be measured from these requests
           alone.
         </p>
+      </section>
+      <section class="monitor" aria-labelledby="inspector-title">
+        <h2 id="inspector-title">04 / Inspect a real request</h2>
+        <p class="hint">Includes dashboard and terminal requests. Latest 50 requests and 20 errors, in memory; cleared on restart. Only demo pixels are retained; malformed inputs may be summarized.</p>
+        <label for="request-select">Request history (newest first)</label>
+        <select id="request-select"><option>No requests yet</option></select>
+        <p id="request-meta" class="hint"></p>
+        <div class="request-layout">
+          <div><canvas id="request-image" width="8" height="8" aria-label="Selected request image"></canvas><p class="hint">Pink pixels are invalid.<br />Missing pixels are blue.</p></div>
+          <div><h3>POST /predict · JSON body</h3><pre id="request-json">Send a request to begin.</pre></div>
+          <div><h3>HTTP response · JSON</h3><pre id="request-result">Waiting for a response.</pre></div>
+        </div>
+        <h3>Error log</h3>
+        <div id="error-log" role="log">No errors recorded.</div>
+      </section>
+      <section class="monitor" aria-labelledby="drift-title">
+        <h2 id="drift-title">05 / Data drift: the inputs changed</h2>
+        <p>Imagine a camera exposure setting changes. Here we simulate it by adding 8 to every pixel, capped at 16. The digit's known label stays the same; the image distribution changes.</p>
+        <p class="hint">Left: original labeled example. Right: exact brighter image sent to the API. Click Send 30 brighter samples above, or run traffic.py --mode shifted. Results below come from real responses in the recent request history.</p>
+        <p id="drift-summary" role="status">Preview only — brighter examples have not been sent yet.</p>
+        <div id="drift-examples" class="drift-grid"></div>
+        <p class="hint">These 10 repeated teaching examples are not a fresh accuracy benchmark. A wrong digit can return HTTP 200. The brightness alert detects a change in inputs; confirming quality loss requires labeled outcomes.</p>
       </section>
     </main>
     <footer>

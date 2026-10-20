@@ -53,11 +53,11 @@ Rehearse the 15-minute introduction first. The numbered sequence below starts at
 2. Try a handwritten digit. A wrong answer is useful: discuss dataset mismatch.
 3. Open the notebook and run it. Run `python -m ml.train` and inspect `artifacts/metadata.json`.
 4. Show `PredictionInput`, then `/docs`. Run `python scripts/smoke.py` in a second terminal.
-5. Run `python scripts/traffic.py --mode invalid --count 1`. Show HTTP 422, then the error counter.
+5. Run `python scripts/traffic.py --mode invalid --count 1`. Pause at the original/sent images and actual JSON: the first pixel is 99. Show HTTP 422, `detail` identifying `body.pixels.0`, and `model_ran: false`. Open the dashboard error log and match its request ID to the terminal. Click **Stats JSON**: `requests`/`errors` increase, `predictions` does not. Use a second terminal for `curl -s http://localhost:8000/stats | python -m json.tool`.
 6. Show the Docker build stages. Trigger a manual redeploy of the prepared Render service. Narrate repository → build → health check → public URL.
 7. Run `python scripts/smoke.py --url https://YOUR-SERVICE.onrender.com`. Show that this is a different host from the Codespace.
 8. Have students use their own app for experiments so everyone can see their own metrics. Use the shared deployed app briefly to demonstrate multi-user traffic.
-9. Send 30 normal samples, then 30 shifted samples. Explain why the alert does not measure accuracy.
+9. Send 30 normal samples, then 30 shifted samples. Scroll to the data drift gallery: original versus brighter, known label versus returned digit. Point to an actual **WRONG** result with HTTP 200. Explain changed camera exposure as input/data drift. The alert measures brightness, while the teaching labels let us check these examples' correctness. Click **Inspect request** to connect a shifted image to its JSON. Do not describe 10 repeated samples as a new accuracy benchmark.
 10. Send 100 normal samples to clear the window. Ask what must happen before swapping in a candidate model.
 
 ## If something goes wrong

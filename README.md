@@ -46,6 +46,8 @@ The original Python base image contained an unused Yarn apt repository with a mi
 - Each response includes a digit, class scores, and the model version.
 - Live counters show prediction requests, error rate, recent p95 latency, and low scores.
 - Brighter inputs trigger a simple monitoring heuristic. Invalid inputs produce HTTP 422.
+- The request inspector shows the sent image, JSON body, HTTP response, latency, and request ID, including calls from terminal scripts. A separate error log explains validation failures.
+- The data drift gallery pairs original and brighter images with actual predictions. It highlights wrong answers that still returned HTTP 200.
 - Docker packages the same application for a hosted deployment.
 
 **Workshop guide:** [student exercises](docs/WORKSHOP.md) · [presenter runbook](docs/PRESENTER.md) · [deployment walkthrough](docs/DEPLOYMENT.md) · [solutions](docs/SOLUTIONS.md)
@@ -81,10 +83,13 @@ ruff check .                              # Python lint
 python scripts/smoke.py                    # verify a running service
 python scripts/traffic.py --mode normal    # 30 valid requests
 python scripts/traffic.py --mode shifted   # 30 brighter inputs
-python scripts/traffic.py --mode invalid   # expected 422 responses
+python scripts/traffic.py --mode invalid --count 1 # inspect a rejected image + JSON
+curl -s http://localhost:8000/stats | python -m json.tool # monitoring JSON
 ```
 
 Run the traffic commands in a second terminal. Add `--url https://YOUR-SERVICE.onrender.com` to target a deployment you control. After the shifted exercise, send `--mode normal --count 100` to replace the whole rolling window.
+
+Each script prints the original/sent images as terminal pixel art, the actual request JSON, and the full response. For full visual images, use the dashboard inspector and drift gallery. Click **Stats JSON** in the header, or append `/stats` to your app's forwarded Codespaces URL. `/requests` returns the latest 50 request records and 20 errors; both logs and metrics reset on restart. These logs intentionally contain public demo pixels; do not use this logging pattern for sensitive production inputs.
 
 Browser regression checks are optional for workshop attendees and run in CI. With the service running and Node.js 22+ installed:
 

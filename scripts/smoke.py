@@ -5,6 +5,8 @@ import json
 import urllib.error
 import urllib.request
 
+from demo_output import show_request, show_response
+
 
 def main():
     parser = argparse.ArgumentParser()
@@ -19,6 +21,7 @@ def main():
     health = get("/health")
     assert health["status"] == "ready"
     sample = get("/samples")[3]
+    show_request(base, sample["pixels"], sample["pixels"], sample["label"])
     request = urllib.request.Request(
         base + "/predict",
         data=json.dumps({"pixels": sample["pixels"]}).encode(),
@@ -26,16 +29,22 @@ def main():
     )
     with urllib.request.urlopen(request, timeout=30) as response:
         prediction = json.load(response)
+        show_response(response.status, prediction)
     assert prediction["digit"] == sample["label"]
     assert prediction["model_version"] == health["model_version"]
     assert abs(sum(prediction["probabilities"]) - 1) < 1e-6
+    invalid_pixels = [99, *sample["pixels"][1:]]
+    show_request(base, sample["pixels"], invalid_pixels, sample["label"])
     invalid = urllib.request.Request(
-        base + "/predict", data=b'{"pixels": [99]}', headers={"Content-Type": "application/json"}
+        base + "/predict",
+        data=json.dumps({"pixels": invalid_pixels}).encode(),
+        headers={"Content-Type": "application/json"},
     )
     try:
         urllib.request.urlopen(invalid, timeout=30)
     except urllib.error.HTTPError as exc:
         assert exc.code == 422
+        show_response(exc.code, json.load(exc))
     else:
         raise AssertionError("Invalid input must return 422")
     assert get("/stats")["requests"] >= 2

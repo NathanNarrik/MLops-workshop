@@ -60,8 +60,25 @@ header {
 }
 nav {
   display: flex;
+  flex-wrap: wrap;
   gap: 24px;
   font-size: 14px;
+}
+.request-layout { display: grid; grid-template-columns: 120px 1fr 1fr; gap: 24px; }
+.request-layout > div, .result-panel { min-width: 0; }
+.request-layout h3 { font-size: 14px; }
+.request-layout pre { max-height: 360px; }
+#request-image { width: 112px; height: 112px; cursor: default; }
+#error-log { max-height: 300px; overflow: auto; }
+#error-log button { display: block; width: 100%; text-align: left; margin: 8px 0; overflow-wrap: anywhere; }
+.drift-grid { display: grid; grid-template-columns: repeat(auto-fit, minmax(190px, 1fr)); gap: 16px; }
+.drift-card { padding: 16px; border: 1px solid var(--border); background: #0b0e15; }
+.drift-pair { display: flex; gap: 12px; }
+.drift-pair canvas { width: 72px; height: 72px; cursor: default; }
+.drift-card p { font-size: 13px; line-height: 1.5; }
+@media (max-width: 800px) {
+  .request-layout { grid-template-columns: 1fr; }
+  nav { max-width: 180px; }
 }
 main {
   padding: 18px 30px 50px;
